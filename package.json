@@ -1,0 +1,16 @@
+{
+  "name": "Parser",
+  "version": "1.0.0",
+  "description": "Script to open BetCity using Selenium",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "selenium-webdriver": "^4.18.1",
+    "chromedriver": "^122.0.0"
+  },
+  "author": "",
+  "license": "ISC"
+}
