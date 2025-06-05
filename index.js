@@ -132,19 +132,23 @@ async function openBetCity() {
 
 function saveResultsToJsonAndCsv(results) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const jsonFile = `matches_${timestamp}.json`;
-    const csvFile = `matches_${timestamp}.csv`;
+
+    const resultsDir = path.join(__dirname, 'results');
+
+    if (!fs.existsSync(resultsDir)) {
+        fs.mkdirSync(resultsDir, { recursive: true });
+    }
+
+    const jsonFile = path.join(resultsDir, `matches_${timestamp}.json`);
+    const csvFile = path.join(resultsDir, `matches_${timestamp}.csv`);
 
     fs.writeFileSync(jsonFile, JSON.stringify(results, null, 2), 'utf-8');
 
     const csvHeader = 'Команды,Ссылка на матч,Количество матчей 0:0\n';
-    const csvBody = results.map(match => 
+    const csvBody = results.map(match =>
         `"${match.teams}","${match.url}",${match.zeroZeroCount}`
     ).join('\n');
-    
     fs.writeFileSync(csvFile, csvHeader + csvBody, 'utf-8');
-
-    console.log(`✅ Сохранено:\n- ${jsonFile}\n- ${csvFile}`);
 }
 
 async function checkStatsPages(statUrls) {
@@ -161,9 +165,10 @@ async function checkStatsPages(statUrls) {
     try {
         for (const relativeUrl of statUrls) {
             await driver.get(relativeUrl);
-            await driver.sleep(1500);
+            await driver.sleep(2000);
 
             const pageSource = await driver.getPageSource();
+
             const zeroDrawRegex = /(\d+:\d+)\s*\(/g;
             const scoreTables = pageSource.split('Последние игры');
 
