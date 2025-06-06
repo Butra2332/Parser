@@ -1,6 +1,18 @@
 import { Builder, By, until, Key } from 'selenium-webdriver';
 import chrome from 'selenium-webdriver/chrome.js';
 import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { initializeApp } from 'firebase/app';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Initialize Firebase
+const firebaseConfig = JSON.parse(process.env.FIREBASE_CONFIG);
+const app = initializeApp(firebaseConfig);
+const functions = getFunctions(app);
 
 async function openBetCity() {
     const options = new chrome.Options();
@@ -13,6 +25,7 @@ async function openBetCity() {
 
     try {
         await driver.get('https://betcity.by/ru');
+        await driver.wait(until.elementLocated(By.css('body')), 10000);
         
         const footballLink = await driver.wait(
             until.elementLocated(By.css('a[href="/ru/line/soccer"]')),
@@ -206,12 +219,54 @@ async function checkStatsPages(statUrls) {
     return matchesWithZeros;
 }
 
-openBetCity()
-.then(response => {
-    checkStatsPages(response).then(results => {
-        console.log('Матчи с тремя и более 0:0:', results);
-        saveResultsToJsonAndCsv(results);
-    });
+async function sendEmailNotification(results) {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const resultsDir = path.join(__dirname, 'results');
+    const jsonFile = path.join(resultsDir, `matches_${timestamp}.json`);
+    const csvFile = path.join(resultsDir, `matches_${timestamp}.csv`);
 
-})
-.catch(console.error);
+    // Save results to files
+    saveResultsToJsonAndCsv(results);
+
+    // Prepare email data
+    const emailData = {
+        subject: `BetCity Parser Results - ${new Date().toLocaleDateString()}`,
+        text: `Found ${results.length} matches with three or more 0:0 results.`,
+        attachments: [
+            {
+                filename: `matches_${timestamp}.json`,
+                path: jsonFile
+            },
+            {
+                filename: `matches_${timestamp}.csv`,
+                path: csvFile
+            }
+        ]
+    };
+
+    // Send email
+    const sendEmail = httpsCallable(functions, 'sendEmailNotification');
+    try {
+        await sendEmail(emailData);
+        console.log('Email notification sent successfully');
+    } catch (error) {
+        console.error('Error sending email notification:', error);
+    }
+}
+
+openBetCity()
+    .then(response => {
+        checkStatsPages(response).then(results => {
+            console.log('Матчи с тремя и более 0:0:', results);
+            saveResultsToJsonAndCsv(results);
+            return sendEmailNotification(results);
+        });
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        sendEmailNotification([{
+            error: true,
+            message: error.message,
+            timestamp: new Date().toISOString()
+        }]);
+    });

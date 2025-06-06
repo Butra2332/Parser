@@ -9,7 +9,17 @@
   },
   "dependencies": {
     "selenium-webdriver": "^4.18.1",
-    "chromedriver": "^122.0.0"
+    "chromedriver": "^122.0.0",
+    "firebase-admin": "^13.4.0",
+    "firebase": "^10.8.0",
+    "nodemailer": "^6.9.9",
+    "csv-writer": "^1.6.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "author": "",
   "license": "ISC"
