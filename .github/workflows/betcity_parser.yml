@@ -1,4 +1,4 @@
-name: BetCity Parser
+name: Parser
 
 on:
   schedule:
