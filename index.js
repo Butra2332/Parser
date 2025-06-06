@@ -177,10 +177,11 @@ async function checkStatsPages(statUrls) {
             const scoreTables = pageSource.split('Последние игры');
 
             let foundValid = false;
+            let zeroZeroCount = 0;
 
             for (const teamSection of scoreTables.slice(1, 3)) {
                 const matches = [...teamSection.matchAll(zeroDrawRegex)];
-                let zeroZeroCount = 0;
+                zeroZeroCount = 0;
 
                 for (let i = 0; i < Math.min(matches.length, 5); i++) {
                     const score = matches[i][1];
