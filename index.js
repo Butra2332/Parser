@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 async function openBetCity() {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
-    options.addArguments('--headless');  // Добавляем headless режим для GitHub Actions
+    // options.addArguments('--headless');  // Добавляем headless режим для GitHub Actions
     
     const driver = await new Builder()
         .forBrowser('chrome')
@@ -157,7 +157,7 @@ function saveResultsToJsonAndCsv(results) {
 async function checkStatsPages(statUrls) {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
-    options.addArguments('--headless');  // Добавляем headless режим для GitHub Actions
+    // options.addArguments('--headless'); 
 
     const driver = await new Builder()
         .forBrowser('chrome')

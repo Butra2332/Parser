@@ -3,7 +3,7 @@ name: BetCity Parser
 on:
   schedule:
     - cron: '0 10 * * *'  # Runs at 10:00 AM UTC every day
-  workflow_dispatch:  # Allows manual trigger
+    workflow_dispatch:  # Allows manual trigger
 
 jobs:
   parse:
