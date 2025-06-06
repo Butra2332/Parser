@@ -169,7 +169,7 @@ async function checkStatsPages(statUrls) {
     try {
         for (const relativeUrl of statUrls) {
             await driver.get(relativeUrl);
-            await driver.sleep(2000);
+            await driver.sleep(2500);
 
             const pageSource = await driver.getPageSource();
 
