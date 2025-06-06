@@ -17,6 +17,9 @@ async function openBetCity() {
     options.addArguments('--disable-gpu');
     options.addArguments('--window-size=1920,1080');
     options.addArguments('--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
+    // Добавляем аргументы для изоляции профиля пользователя и отладки
+    options.addArguments('--user-data-dir=/tmp/chrome-user-data-' + Math.random().toString(36).substring(7));
+    options.addArguments('--remote-debugging-port=9222');
     
     const driver = await new Builder()
         .forBrowser('chrome')
