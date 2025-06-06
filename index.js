@@ -3,20 +3,14 @@ import chrome from 'selenium-webdriver/chrome.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { initializeApp } from 'firebase/app';
-import { getFunctions, httpsCallable } from 'firebase/functions';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Initialize Firebase
-const firebaseConfig = JSON.parse(process.env.FIREBASE_CONFIG);
-const app = initializeApp(firebaseConfig);
-const functions = getFunctions(app);
-
 async function openBetCity() {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
+    options.addArguments('--headless');  // Добавляем headless режим для GitHub Actions
     
     const driver = await new Builder()
         .forBrowser('chrome')
@@ -81,13 +75,9 @@ async function openBetCity() {
                     const select = appSelect.querySelector('select');
                     if (select) {
                         const options = Array.from(select.options).map(opt => opt.textContent);
-                        // Check if this select has the sorting options
                         if (options.some(text => text.includes('По алфавиту'))) {
-                            // Click to open
                             appSelect.click();
-                            
-                            // Set the value immediately
-                            select.value = '2';  // По алфавиту
+                            select.value = '2';
                             select.dispatchEvent(new Event('change', { bubbles: true }));
                             select.dispatchEvent(new Event('input', { bubbles: true }));
                             return true;
@@ -135,9 +125,9 @@ async function openBetCity() {
         await driver.sleep(1000);
         return hrefs;
         
-        
     } catch (error) {
         console.error('An error occurred:', error);
+        throw error;
     } finally {
         await driver.quit();
     }
@@ -167,6 +157,7 @@ function saveResultsToJsonAndCsv(results) {
 async function checkStatsPages(statUrls) {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
+    options.addArguments('--headless');  // Добавляем headless режим для GitHub Actions
 
     const driver = await new Builder()
         .forBrowser('chrome')
@@ -200,18 +191,24 @@ async function checkStatsPages(statUrls) {
                     }
                 }
 
-                if (zeroZeroCount >= 2) {
+                if (zeroZeroCount >= 3) {
                     foundValid = true;
                     break;
                 }
             }
 
             if (foundValid) {
-                matchesWithZeros.push(relativeUrl);
+                const teams = await driver.findElement(By.css('.event-name')).getText();
+                matchesWithZeros.push({
+                    teams: teams,
+                    url: relativeUrl,
+                    zeroZeroCount: zeroZeroCount
+                });
             }
         }
     } catch (error) {
-        console.error('Error in checkStatsPages:', error);
+        console.error('Error checking stats pages:', error);
+        throw error;
     } finally {
         await driver.quit();
     }
@@ -219,54 +216,14 @@ async function checkStatsPages(statUrls) {
     return matchesWithZeros;
 }
 
-async function sendEmailNotification(results) {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const resultsDir = path.join(__dirname, 'results');
-    const jsonFile = path.join(resultsDir, `matches_${timestamp}.json`);
-    const csvFile = path.join(resultsDir, `matches_${timestamp}.csv`);
-
-    // Save results to files
-    saveResultsToJsonAndCsv(results);
-
-    // Prepare email data
-    const emailData = {
-        subject: `BetCity Parser Results - ${new Date().toLocaleDateString()}`,
-        text: `Found ${results.length} matches with three or more 0:0 results.`,
-        attachments: [
-            {
-                filename: `matches_${timestamp}.json`,
-                path: jsonFile
-            },
-            {
-                filename: `matches_${timestamp}.csv`,
-                path: csvFile
-            }
-        ]
-    };
-
-    // Send email
-    const sendEmail = httpsCallable(functions, 'sendEmailNotification');
-    try {
-        await sendEmail(emailData);
-        console.log('Email notification sent successfully');
-    } catch (error) {
-        console.error('Error sending email notification:', error);
-    }
-}
-
 openBetCity()
     .then(response => {
         checkStatsPages(response).then(results => {
             console.log('Матчи с тремя и более 0:0:', results);
             saveResultsToJsonAndCsv(results);
-            return sendEmailNotification(results);
         });
     })
     .catch(error => {
         console.error('Error:', error);
-        sendEmailNotification([{
-            error: true,
-            message: error.message,
-            timestamp: new Date().toISOString()
-        }]);
+        process.exit(1);
     });
