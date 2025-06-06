@@ -2,7 +2,7 @@ name: BetCity Parser
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Runs at the start of every hour
+    - cron: '0 10 * * *'  # Runs at 10:00 AM UTC every day
   workflow_dispatch:  # Allows manual trigger
 
 jobs:
@@ -12,36 +12,30 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: Setup Node.js
+    - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
         node-version: '18'
-        
-    - name: Install Chrome
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y chromium-browser
         
     - name: Install dependencies
       run: npm install
       
     - name: Run parser
       run: node index.js
-      env:
-        EMAIL_USER: "anton.butra@celadonsoft.com"
-        EMAIL_PASSWORD: "wyiy limt wpax nksx"
-        
+      
     - name: Send email
       uses: dawidd6/action-send-mail@v3
       with:
         server_address: smtp.gmail.com
         server_port: 465
-        username: ${{ env.EMAIL_USER }}
-        password: ${{ env.EMAIL_PASSWORD }}
-        subject: BetCity Parser Report
+        username: ${{ secrets.EMAIL_USER }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: BetCity Parser Results
         body: |
-          Please find attached the latest BetCity parser report.
-        to: anton.butra@celadonsoft.com
-        from: ${{ env.EMAIL_USER }}
-        content_type: text/plain
-        attachments: results/*.json, results/*.csv 
+          Results from BetCity Parser:
+          
+          Please find the attached files with the results.
+        from: ${{ secrets.EMAIL_USER }}
+        to: ${{ secrets.EMAIL_USER }}
+        secure: true
+        attachments: results/*.json,results/*.csv 

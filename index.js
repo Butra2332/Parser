@@ -191,7 +191,7 @@ async function checkStatsPages(statUrls) {
                     }
                 }
 
-                if (zeroZeroCount >= 3) {
+                if (zeroZeroCount >= 2) {
                     foundValid = true;
                     break;
                 }
