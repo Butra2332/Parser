@@ -10,7 +10,13 @@ const __dirname = path.dirname(__filename);
 async function openBetCity() {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
-    options.addArguments('--headless');
+    // options.addArguments('--headless');
+    options.addArguments('--disable-blink-features=AutomationControlled');
+    options.addArguments('--disable-dev-shm-usage');
+    options.addArguments('--no-sandbox');
+    options.addArguments('--disable-gpu');
+    options.addArguments('--window-size=1920,1080');
+    options.addArguments('--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
     
     const driver = await new Builder()
         .forBrowser('chrome')
@@ -21,13 +27,19 @@ async function openBetCity() {
         await driver.get('https://betcity.by/ru');
         await driver.wait(until.elementLocated(By.css('body')), 10000);
         
+        // Добавляем случайную задержку
+        await driver.sleep(Math.random() * 2000 + 1000);
+        
         const footballLink = await driver.wait(
             until.elementLocated(By.css('a[href="/ru/line/soccer"]')),
             10000
         );
         
         await driver.wait(until.elementIsVisible(footballLink), 10000);
+        await driver.sleep(1000);
         await footballLink.click();
+        
+        await driver.sleep(2000);
         
         const periodSelect = await driver.wait(
             until.elementLocated(By.css('app-select[name="selectedPeriod"]')),
@@ -35,10 +47,10 @@ async function openBetCity() {
         );
         
         await driver.executeScript('arguments[0].scrollIntoView(true);', periodSelect);
-        await driver.sleep(500);
+        await driver.sleep(1000);
         
         await periodSelect.click();
-        await driver.sleep(500);
+        await driver.sleep(1000);
         
         await driver.executeScript(`
             function findAndClickOption() {
@@ -66,7 +78,7 @@ async function openBetCity() {
             return findAndClickOption();
         `);
         
-        await driver.sleep(500);
+        await driver.sleep(2000);
         
         await driver.executeScript(`
             function findSortingSelect() {
@@ -89,18 +101,18 @@ async function openBetCity() {
             return findSortingSelect();
         `);
         
-        await driver.sleep(500);
+        await driver.sleep(2000);
+        
         const allEventsCheckbox = await driver.wait(
             until.elementLocated(By.xpath('//div[contains(@class, "champs__champ_all")]')),
             10000
         );
         
         await driver.executeScript('arguments[0].scrollIntoView(true);', allEventsCheckbox);
-        await driver.sleep(500);
+        await driver.sleep(1000);
         
         await allEventsCheckbox.click();
-        
-        await driver.sleep(500);
+        await driver.sleep(2000);
         
         const showButton = await driver.wait(
             until.elementLocated(By.css('button.line__controls-button')),
@@ -122,7 +134,7 @@ async function openBetCity() {
             }
         }
 
-        await driver.sleep(1000);
+        await driver.sleep(2000);
         return hrefs;
         
     } catch (error) {
@@ -147,17 +159,22 @@ function saveResultsToJsonAndCsv(results) {
 
     fs.writeFileSync(jsonFile, JSON.stringify(results, null, 2), 'utf-8');
 
-    const csvHeader = 'Команды,Ссылка на матч,Количество матчей 0:0\n';
+    const csvHeader = 'Команды,Ссылка на матч,Подряд нулевых матчей команды 1,Подряд нулевых матчей команды 2\n';
     const csvBody = results.map(match =>
-        `"${match.teams}","${match.url}",${match.zeroZeroCount}`
+        `"${match.teams}","${match.url}",${match.team1ConsecutiveZeros},${match.team2ConsecutiveZeros}`
     ).join('\n');
     fs.writeFileSync(csvFile, csvHeader + csvBody, 'utf-8');
 }
 
 async function checkStatsPages(statUrls) {
     const options = new chrome.Options();
-    options.addArguments('--start-maximized');
-    options.addArguments('--headless'); 
+    // options.addArguments('--headless');
+    options.addArguments('--disable-blink-features=AutomationControlled');
+    options.addArguments('--disable-dev-shm-usage');
+    options.addArguments('--no-sandbox');
+    options.addArguments('--disable-gpu');
+    options.addArguments('--window-size=1920,1080');
+    options.addArguments('--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
 
     const driver = await new Builder()
         .forBrowser('chrome')
@@ -168,43 +185,67 @@ async function checkStatsPages(statUrls) {
 
     try {
         for (const relativeUrl of statUrls) {
-            await driver.get(relativeUrl);
-            await driver.sleep(2500);
+            try {
+                await driver.get(relativeUrl);
+                await driver.wait(until.elementLocated(By.css('body')), 10000);
+                await driver.wait(until.elementLocated(By.css('.mstat__content')), 30000);
+                await driver.sleep(Math.random() * 2000 + 2000);
 
-            const pageSource = await driver.getPageSource();
+                const lastBreadcrumb = await driver.findElement(By.css('.breadcrumbs li:last-child span[itemprop="name"]'));
+                const teams = await lastBreadcrumb.getText();
+                const tables = await driver.findElements(By.css('.ev-mstat-tbl'));
+                
+                if (tables.length < 2) {
+                    console.log(`Skipping ${relativeUrl} - not enough match tables found`);
+                    continue;
+                }
 
-            const zeroDrawRegex = /(\d+:\d+)\s*\(/g;
-            const scoreTables = pageSource.split('Последние игры');
-
-            let foundValid = false;
-            let zeroZeroCount = 0;
-
-            for (const teamSection of scoreTables.slice(1, 3)) {
-                const matches = [...teamSection.matchAll(zeroDrawRegex)];
-                zeroZeroCount = 0;
-
-                for (let i = 0; i < Math.min(matches.length, 5); i++) {
-                    const score = matches[i][1];
-                    if (score.trim() === '0:0') {
-                        zeroZeroCount++;
+                let team1ConsecutiveZeros = 0;
+                let team2ConsecutiveZeros = 0;
+                
+                // Анализ матчей первой команды
+                const team1Matches = await tables[0].findElements(By.css('.ev-mstat-ev'));
+                console.log(`Found ${team1Matches.length} matches for team 1`);
+                
+                for (const match of team1Matches) {
+                    const score = await match.findElement(By.xpath('./following-sibling::td[contains(@class, "score")]')).getText();
+                    const finalScore = score.split('(')[0].trim();
+                    console.log(`Team 1 match score: ${finalScore}`);
+                    if (finalScore === '0:0') {
+                        team1ConsecutiveZeros++;
+                    } else {
+                        break;
+                    }
+                }
+                
+                // Анализ матчей второй команды
+                const team2Matches = await tables[1].findElements(By.css('.ev-mstat-ev'));
+                console.log(`Found ${team2Matches.length} matches for team 2`);
+                
+                for (const match of team2Matches) {
+                    const score = await match.findElement(By.xpath('./following-sibling::td[contains(@class, "score")]')).getText();
+                    const finalScore = score.split('(')[0].trim();
+                    console.log(`Team 2 match score: ${finalScore}`);
+                    if (finalScore === '0:0') {
+                        team2ConsecutiveZeros++;
                     } else {
                         break;
                     }
                 }
 
-                if (zeroZeroCount >= 2) {
-                    foundValid = true;
-                    break;
+                
+                if (team1ConsecutiveZeros >= 2 || team2ConsecutiveZeros >= 2) {
+                    matchesWithZeros.push({
+                        teams: teams,
+                        url: relativeUrl,
+                        team1ConsecutiveZeros,
+                        team2ConsecutiveZeros
+                    });
                 }
-            }
-
-            if (foundValid) {
-                const teams = await driver.findElement(By.css('.event-name')).getText();
-                matchesWithZeros.push({
-                    teams: teams,
-                    url: relativeUrl,
-                    zeroZeroCount: zeroZeroCount
-                });
+                
+            } catch (error) {
+                console.error(`Error processing URL ${relativeUrl}:`, error);
+                continue;
             }
         }
     } catch (error) {

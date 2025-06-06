@@ -1,8 +1,11 @@
 name: Parser
 
 on:
+  push:
+    branches:
+      - main # или ваша основная ветка
   schedule:
-    - cron: '*/30 * * * *'  # Runs every 30 minutes
+    - cron: '0 10 * * *' # Запуск каждый день в 10:00 UTC
 
 jobs:
   parse:
