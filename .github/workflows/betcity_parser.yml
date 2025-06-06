@@ -2,7 +2,7 @@ name: BetCity Parser
 
 on:
   schedule:
-    - cron: '0 10 * * *'  # Runs at 10:00 AM UTC every day
+    - cron: '*/30 * * * *'  # Runs every 30 minutes
 
 jobs:
   parse:
