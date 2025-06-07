@@ -158,7 +158,7 @@ function saveResultsToJsonAndCsv(results) {
     fs.writeFileSync(csvFile, csvHeader + csvBody, 'utf-8');
 }
 
-function saveReportToCsv(totalLinksCount, successLinksCount, failedLinks) {
+function saveReportToCsv(totalLinksCount = 0, successLinksCount = 0, failedLinks = []) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const resultsDir = path.join(__dirname, 'results');
 
@@ -171,12 +171,12 @@ function saveReportToCsv(totalLinksCount, successLinksCount, failedLinks) {
     let csvContent = 'Метрика,Значение\n';
     csvContent += `Total Links,${totalLinksCount}\n`;
     csvContent += `Success Links,${successLinksCount}\n`;
-    csvContent += `Failed Links Count,${failedLinks.length}\n`;
+    csvContent += `Failed Links Count,${failedLinks?.length}\n`;
 
     if (failedLinks.length > 0) {
         csvContent += '\nНеудачные ссылки,Ошибка\n';
         failedLinks.forEach(item => {
-            csvContent += `"${item.link}","${item.error.replace(/"/g, '')}"\n`; // Экранируем кавычки в сообщении об ошибке
+            csvContent += `"${item.link}","${item.error.replace(/"/g, '')}"\n`;
         });
     }
 
