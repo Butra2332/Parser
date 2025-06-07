@@ -11,13 +11,131 @@ async function openBetCity() {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
     options.addArguments('--headless');
-
+    
     const driver = await new Builder()
         .forBrowser('chrome')
         .setChromeOptions(options)
         .build();
 
-    return driver;
+    try {
+        await driver.get('https://betcity.by/ru');
+        await driver.wait(until.elementLocated(By.css('body')), 10000);
+        
+        await driver.sleep(Math.random() * 2000 + 1000);
+        
+        const footballLink = await driver.wait(
+            until.elementLocated(By.css('a[href="/ru/line/soccer"]')),
+            10000
+        );
+        
+        await driver.wait(until.elementIsVisible(footballLink), 10000);
+        await driver.sleep(1000);
+        await footballLink.click();
+        
+        await driver.sleep(2000);
+        
+        const periodSelect = await driver.wait(
+            until.elementLocated(By.css('app-select[name="selectedPeriod"]')),
+            10000
+        );
+        
+        await driver.executeScript('arguments[0].scrollIntoView(true);', periodSelect);
+        await driver.sleep(1000);
+        
+        await periodSelect.click();
+        await driver.sleep(1000);
+        
+        await driver.executeScript(`
+            function findAndClickOption() {
+                const selectors = [
+                    'app-select[name="selectedPeriod"] select option[value="48"]',
+                    'select option[value="48"]',
+                    '.select-dropdown option[value="48"]',
+                    'app-select option[value="48"]'
+                ];
+                
+                for (const selector of selectors) {
+                    const option = document.querySelector(selector);
+                    if (option) {
+                        const select = option.closest('select');
+                        if (select) {
+                            select.value = '48';
+                            select.dispatchEvent(new Event('change', { bubbles: true }));
+                            select.dispatchEvent(new Event('input', { bubbles: true }));
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+            return findAndClickOption();
+        `);
+        
+        await driver.sleep(2000);
+        
+        await driver.executeScript(`
+            function findSortingSelect() {
+                const appSelects = document.querySelectorAll('app-select');
+                for (const appSelect of appSelects) {
+                    const select = appSelect.querySelector('select');
+                    if (select) {
+                        const options = Array.from(select.options).map(opt => opt.textContent);
+                        if (options.some(text => text.includes('По алфавиту'))) {
+                            appSelect.click();
+                            select.value = '2';
+                            select.dispatchEvent(new Event('change', { bubbles: true }));
+                            select.dispatchEvent(new Event('input', { bubbles: true }));
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+            return findSortingSelect();
+        `);
+        
+        await driver.sleep(2000);
+        
+        const allEventsCheckbox = await driver.wait(
+            until.elementLocated(By.xpath('//div[contains(@class, "champs__champ_all")]')),
+            10000
+        );
+        
+        await driver.executeScript('arguments[0].scrollIntoView(true);', allEventsCheckbox);
+        await driver.sleep(1000);
+        
+        await allEventsCheckbox.click();
+        await driver.sleep(2000);
+        
+        const showButton = await driver.wait(
+            until.elementLocated(By.css('button.line__controls-button')),
+            10000
+        );
+
+        await driver.wait(until.elementIsVisible(showButton), 5000);
+        await driver.executeScript("arguments[0].scrollIntoView({block: 'center'});", showButton);
+        await driver.executeScript("arguments[0].click();", showButton);
+        await driver.sleep(5000);
+
+        const statLinks = await driver.findElements(By.css('a[href^="/ru/mstat/"]'));
+        const hrefs = [];
+
+        for (const link of statLinks) {
+            const href = await link.getAttribute('href');
+            if (href) {
+                hrefs.push(href);
+            }
+        }
+
+        await driver.sleep(2000);
+        return hrefs;
+        
+    } catch (error) {
+        console.error('An error occurred:', error);
+        throw error;
+    } finally {
+        await driver.quit();
+    }
 }
 
 function saveResultsToJsonAndCsv(results) {
@@ -34,14 +152,13 @@ function saveResultsToJsonAndCsv(results) {
 
     fs.writeFileSync(jsonFile, JSON.stringify(results, null, 2), 'utf-8');
 
-    const csvHeader = 'Команды,Ссылка на матч,Подряд нулевых матчей команды 1,Подряд нулевых матчей команды 2\n';
+    const csvHeader = 'Команды, Ссылка на матч, Подряд нулевых матчей команды 1, Подряд нулевых матчей команды 2\n';
     const csvBody = results.map(match =>
         `"${match.teams}","${match.url}",${match.team1ConsecutiveZeros},${match.team2ConsecutiveZeros}`
     ).join('\n');
     fs.writeFileSync(csvFile, csvHeader + csvBody, 'utf-8');
 }
 
-// Новая функция для сохранения отчета о выполнении в CSV
 function saveReportToCsv(totalLinksCount, successLinksCount, failedLinks) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const resultsDir = path.join(__dirname, 'results');
@@ -60,10 +177,7 @@ function saveReportToCsv(totalLinksCount, successLinksCount, failedLinks) {
     if (failedLinks.length > 0) {
         csvContent += '\nНеудачные ссылки,Ошибка\n';
         failedLinks.forEach(item => {
-            // Правильное экранирование кавычек в JavaScript для CSV
-            // Заменяем " на "" внутри строки, которая сама в кавычках
-            const escapedError = item.error.replace(/"/g, '""');
-            csvContent += `"${item.link}","${escapedError}"\n`;
+            csvContent += `"${item.link}","${item.error.replace(/"/g, '''')}"\n`; // Экранируем кавычки в сообщении об ошибке
         });
     }
 
@@ -71,7 +185,16 @@ function saveReportToCsv(totalLinksCount, successLinksCount, failedLinks) {
     console.log(`Report saved to: ${reportFile}`);
 }
 
-async function checkStatsPages(driver, statUrls) {
+async function checkStatsPages(statUrls) {
+    const options = new chrome.Options();
+    options.addArguments('--start-maximized');
+    options.addArguments('--headless');
+
+    const driver = await new Builder()
+        .forBrowser('chrome')
+        .setChromeOptions(options)
+        .build();
+
     const matchesWithZeros = [];
     const failedLinks = [];
     let successLinksCount = 0;
@@ -80,42 +203,33 @@ async function checkStatsPages(driver, statUrls) {
     try {
         for (const relativeUrl of statUrls) {
             try {
-                console.log(`Processing URL: ${relativeUrl}`);
                 await driver.get(relativeUrl);
                 await driver.wait(until.elementLocated(By.css('body')), 10000);
                 await driver.wait(until.elementLocated(By.css('.mstat__content')), 30000);
                 await driver.sleep(Math.random() * 2000 + 2000);
 
-                // Получаем названия команд из последнего элемента breadcrumbs
                 const lastBreadcrumb = await driver.findElement(By.css('.breadcrumbs li:last-child span[itemprop="name"]'));
                 const teams = await lastBreadcrumb.getText();
-                console.log(`Found teams: ${teams}`);
                 const tables = await driver.findElements(By.css('.ev-mstat-tbl'));
-                console.log(`Found ${tables.length} match tables`);
                 
                 let team1ConsecutiveZeros = 0;
                 let team2ConsecutiveZeros = 0;
                 
                 if (tables[0]) {
                     const team1Matches = await tables[0].findElements(By.css('.ev-mstat-ev'));
-                    console.log(`Found ${team1Matches.length} matches for team 1`);
                     for (const match of team1Matches) {
                         const score = await match.findElement(By.xpath('./following-sibling::td[contains(@class, "score")]')).getText();
                         const finalScore = score.split('(')[0].trim();
-                        console.log(`Team 1 match score: ${finalScore}`);
                         if (finalScore === '0:0') {
                             team1ConsecutiveZeros++;
                         } else {
                             team1ConsecutiveZeros = 0;
                         }
                     }
-                } else {
-                    console.log(`Team 1 table not found for URL: ${relativeUrl}`);
                 }
                 
                 if (tables[1]) {
                     const team2Matches = await tables[1].findElements(By.css('.ev-mstat-ev'));
-                    console.log(`Found ${team2Matches.length} matches for team 2`);
                     for (const match of team2Matches) {
                         const score = await match.findElement(By.xpath('./following-sibling::td[contains(@class, "score")]')).getText();
                         const finalScore = score.split('(')[0].trim();
@@ -125,14 +239,8 @@ async function checkStatsPages(driver, statUrls) {
                             team2ConsecutiveZeros = 0;
                         }
                     }
-                } else {
-                    console.log(`Team 2 table not found for URL: ${relativeUrl}`);
                 }
 
-                console.log(`Analyzing ${teams}:`);
-                console.log(`Team 1 consecutive zeros: ${team1ConsecutiveZeros}`);
-                console.log(`Team 2 consecutive zeros: ${team2ConsecutiveZeros}`);
-                
                 if (team1ConsecutiveZeros >= 3 || team2ConsecutiveZeros >= 3) {
                     matchesWithZeros.push({
                         teams: teams,
@@ -150,29 +258,19 @@ async function checkStatsPages(driver, statUrls) {
     } catch (error) {
         throw error;
     } finally {
-        // Драйвер будет закрыт в функции main
+        await driver.quit();
     }
 
     return { matchesWithZeros, totalLinksCount, successLinksCount, failedLinks };
 }
 
-async function main() {
-    const driver = await openBetCity();
-    try {
-
-
-        const results = await checkStatsPages(driver, statLinks);
-        console.log('Matches with 3+ consecutive 0:0:', results.matchesWithZeros);
-        saveResultsToJsonAndCsv(results.matchesWithZeros);
-        saveReportToCsv(results.totalLinksCount, results.successLinksCount, results.failedLinks);
-    } catch (error) {
-        console.error('Error in main function:', error);
+openBetCity()
+    .then(driver => {
+        checkStatsPages(statLinks).then(results => {
+            saveResultsToJsonAndCsv(results.matchesWithZeros);
+            saveReportToCsv(results.totalLinksCount, results.successLinksCount, results.failedLinks);
+        });
+    })
+    .catch(error => {
         process.exit(1);
-    } finally {
-        if (driver) {
-            await driver.quit();
-        }
-    }
-}
-
-main();
+    });
