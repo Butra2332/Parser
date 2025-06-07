@@ -131,7 +131,6 @@ async function openBetCity() {
         return hrefs;
         
     } catch (error) {
-        console.error('An error occurred:', error);
         throw error;
     } finally {
         await driver.quit();
@@ -183,7 +182,6 @@ function saveReportToCsv(totalLinksCount, successLinksCount, failedLinks) {
     }
 
     fs.writeFileSync(reportFile, csvContent, 'utf-8');
-    console.log(`Report saved to: ${reportFile}`);
 }
 
 async function checkStatsPages(statUrls) {
