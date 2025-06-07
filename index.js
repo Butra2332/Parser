@@ -159,6 +159,33 @@ function saveResultsToJsonAndCsv(results) {
     fs.writeFileSync(csvFile, csvHeader + csvBody, 'utf-8');
 }
 
+// Новая функция для сохранения отчета о выполнении в CSV
+function saveReportToCsv(totalLinksCount, successLinksCount, failedLinks) {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const resultsDir = path.join(__dirname, 'results');
+
+    if (!fs.existsSync(resultsDir)) {
+        fs.mkdirSync(resultsDir, { recursive: true });
+    }
+
+    const reportFile = path.join(resultsDir, `report_${timestamp}.csv`);
+
+    let csvContent = 'Метрика,Значение\n';
+    csvContent += `Total Links,${totalLinksCount}\n`;
+    csvContent += `Success Links,${successLinksCount}\n`;
+    csvContent += `Failed Links Count,${failedLinks.length}\n`;
+
+    if (failedLinks.length > 0) {
+        csvContent += '\nНеудачные ссылки,Ошибка\n';
+        failedLinks.forEach(item => {
+            csvContent += `"${item.link}","${item.error.replace(/"/g, '''')}"\n`; // Экранируем кавычки в сообщении об ошибке
+        });
+    }
+
+    fs.writeFileSync(reportFile, csvContent, 'utf-8');
+    console.log(`Report saved to: ${reportFile}`);
+}
+
 async function checkStatsPages(statUrls) {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
@@ -239,12 +266,13 @@ async function checkStatsPages(statUrls) {
 }
 
 openBetCity()
-    .then(response => {
-        checkStatsPages(response).then(results => {
+    .then(driver => {
+        checkStatsPages(statLinks).then(results => {
+            console.log('Matches with 3+ consecutive 0:0:', results.matchesWithZeros);
             saveResultsToJsonAndCsv(results.matchesWithZeros);
+            saveReportToCsv(results.totalLinksCount, results.successLinksCount, results.failedLinks);
         });
     })
     .catch(error => {
-        console.error('Error:', error);
         process.exit(1);
     });
