@@ -158,7 +158,7 @@ function saveResultsToJsonAndCsv(results) {
     fs.writeFileSync(csvFile, csvHeader + csvBody, 'utf-8');
 }
 
-function saveReportToCsv(totalLinksCount = 0, successLinksCount = 0, failedLinks = []) {
+function saveReportToCsv(totalLinksCount, successLinksCount, failedLinks) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const resultsDir = path.join(__dirname, 'results');
 
@@ -173,7 +173,7 @@ function saveReportToCsv(totalLinksCount = 0, successLinksCount = 0, failedLinks
     csvContent += `Success Links,${successLinksCount}\n`;
     csvContent += `Failed Links Count,${failedLinks?.length}\n`;
 
-    if (failedLinks.length > 0) {
+    if (failedLinks?.length > 0) {
         csvContent += '\nНеудачные ссылки,Ошибка\n';
         failedLinks.forEach(item => {
             csvContent += `"${item.link}","${item.error.replace(/"/g, '')}"\n`;
@@ -214,7 +214,7 @@ async function checkStatsPages(statUrls) {
                 let team2ConsecutiveZeros = 0;
                 
                 if (tables[0]) {
-                    const team1Matches = await tables[0].findElements(By.css('.ev-mstat-ev'));
+                    const team1Matches = (await tables[0].findElements(By.css('.ev-mstat-ev'))).reverse();
                     for (const match of team1Matches) {
                         const score = await match.findElement(By.xpath('./following-sibling::td[contains(@class, "score")]')).getText();
                         const finalScore = score.split('(')[0].trim();
@@ -227,7 +227,7 @@ async function checkStatsPages(statUrls) {
                 }
                 
                 if (tables[1]) {
-                    const team2Matches = await tables[1].findElements(By.css('.ev-mstat-ev'));
+                    const team2Matches = (await tables[1].findElements(By.css('.ev-mstat-ev'))).reverse();
                     for (const match of team2Matches) {
                         const score = await match.findElement(By.xpath('./following-sibling::td[contains(@class, "score")]')).getText();
                         const finalScore = score.split('(')[0].trim();
@@ -266,7 +266,7 @@ openBetCity()
     .then(response => {
         checkStatsPages(response).then(results => {
             saveResultsToJsonAndCsv(results.matchesWithZeros);
-            saveReportToCsv(response.totalLinksCount, response.successLinksCount, response.failedLinks)
+            saveReportToCsv(results.totalLinksCount, results.successLinksCount, results.failedLinks)
         });
     })
     .catch(error => {
