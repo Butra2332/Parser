@@ -158,7 +158,6 @@ function saveResultsToJsonAndCsv(results) {
     fs.writeFileSync(csvFile, csvHeader + csvBody, 'utf-8');
 }
 
-// Новая функция для сохранения отчета о выполнении в CSV
 function saveReportToCsv(totalLinksCount, successLinksCount, failedLinks) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const resultsDir = path.join(__dirname, 'results');
@@ -240,7 +239,7 @@ async function checkStatsPages(statUrls) {
                     }
                 }
 
-                if (team1ConsecutiveZeros >= 3 || team2ConsecutiveZeros >= 3) {
+                if (team1ConsecutiveZeros >= 2 || team2ConsecutiveZeros >= 2) {
                     matchesWithZeros.push({
                         teams: teams,
                         url: relativeUrl,
@@ -267,6 +266,7 @@ openBetCity()
     .then(response => {
         checkStatsPages(response).then(results => {
             saveResultsToJsonAndCsv(results.matchesWithZeros);
+            saveReportToCsv(response.totalLinksCount, response.successLinksCount, response.failedLinks)
         });
     })
     .catch(error => {
