@@ -203,7 +203,7 @@ async function checkStatsPages(statUrls) {
             try {
                 await driver.get(relativeUrl);
                 await driver.wait(until.elementLocated(By.css('body')), 10000);
-                await driver.wait(until.elementLocated(By.css('.mstat__content')), 10000);
+                await driver.wait(until.elementLocated(By.css('.mstat__content')), 30000);
                 await driver.sleep(Math.random() * 2000 + 2000);
 
                 const lastBreadcrumb = await driver.findElement(By.css('.breadcrumbs li:last-child span[itemprop="name"]'));
