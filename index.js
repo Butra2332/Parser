@@ -11,6 +11,14 @@ async function openBetCity() {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
     options.addArguments('--headless');
+    options.addArguments('--disable-blink-features=AutomationControlled');
+    options.addArguments('--disable-dev-shm-usage');
+    options.addArguments('--no-sandbox');
+    options.addArguments('--disable-gpu');
+    options.addArguments('--window-size=1920,1080');
+    options.addArguments('--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
+    options.addArguments('--user-data-dir=/tmp/chrome-user-data-' + Math.random().toString(36).substring(7));
+    options.addArguments('--remote-debugging-port=9222');
 
     const driver = await new Builder()
         .forBrowser('chrome')
@@ -41,6 +49,7 @@ function saveResultsToJsonAndCsv(results) {
     fs.writeFileSync(csvFile, csvHeader + csvBody, 'utf-8');
 }
 
+// Новая функция для сохранения отчета о выполнении в CSV
 function saveReportToCsv(totalLinksCount, successLinksCount, failedLinks) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const resultsDir = path.join(__dirname, 'results');
@@ -59,6 +68,8 @@ function saveReportToCsv(totalLinksCount, successLinksCount, failedLinks) {
     if (failedLinks.length > 0) {
         csvContent += '\nНеудачные ссылки,Ошибка\n';
         failedLinks.forEach(item => {
+            // Правильное экранирование кавычек в JavaScript для CSV
+            // Заменяем " на "" внутри строки, которая сама в кавычках
             const escapedError = item.error.replace(/"/g, '""');
             csvContent += `"${item.link}","${escapedError}"\n`;
         });
@@ -77,6 +88,7 @@ async function checkStatsPages(driver, statUrls) {
     try {
         for (const relativeUrl of statUrls) {
             try {
+                console.log(`Processing URL: ${relativeUrl}`);
                 await driver.get(relativeUrl);
                 await driver.wait(until.elementLocated(By.css('body')), 10000);
                 await driver.wait(until.elementLocated(By.css('.mstat__content')), 30000);
@@ -84,7 +96,9 @@ async function checkStatsPages(driver, statUrls) {
 
                 const lastBreadcrumb = await driver.findElement(By.css('.breadcrumbs li:last-child span[itemprop="name"]'));
                 const teams = await lastBreadcrumb.getText();
+                console.log(`Found teams: ${teams}`);
                 const tables = await driver.findElements(By.css('.ev-mstat-tbl'));
+                console.log(`Found ${tables.length} match tables`);
                 
                 let team1ConsecutiveZeros = 0;
                 let team2ConsecutiveZeros = 0;
@@ -142,6 +156,8 @@ async function checkStatsPages(driver, statUrls) {
         }
     } catch (error) {
         throw error;
+    } finally {
+        // Драйвер будет закрыт в функции main
     }
 
     return { matchesWithZeros, totalLinksCount, successLinksCount, failedLinks };
@@ -150,9 +166,13 @@ async function checkStatsPages(driver, statUrls) {
 async function main() {
     const driver = await openBetCity();
     try {
+
+        const results = await checkStatsPages(driver, statLinks);
+        console.log('Matches with 3+ consecutive 0:0:', results.matchesWithZeros);
         saveResultsToJsonAndCsv(results.matchesWithZeros);
         saveReportToCsv(results.totalLinksCount, results.successLinksCount, results.failedLinks);
     } catch (error) {
+        console.error('Error in main function:', error);
         process.exit(1);
     } finally {
         if (driver) {
