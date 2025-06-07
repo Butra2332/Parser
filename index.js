@@ -177,7 +177,7 @@ function saveReportToCsv(totalLinksCount, successLinksCount, failedLinks) {
     if (failedLinks.length > 0) {
         csvContent += '\nНеудачные ссылки,Ошибка\n';
         failedLinks.forEach(item => {
-            csvContent += `"${item.link}","${item.error.replace(/"/g, '''')}"\n`; // Экранируем кавычки в сообщении об ошибке
+            csvContent += `"${item.link}","${item.error.replace(/"/g, '')}"\n`; // Экранируем кавычки в сообщении об ошибке
         });
     }
 
