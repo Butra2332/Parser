@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 async function openBetCity() {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
-    options.addArguments('--headless');
+    // options.addArguments('--headless');
     
     const driver = await new Builder()
         .forBrowser('chrome')
@@ -21,7 +21,6 @@ async function openBetCity() {
         await driver.get('https://betcity.by/ru');
         await driver.wait(until.elementLocated(By.css('body')), 10000);
         
-        // Добавляем случайную задержку
         await driver.sleep(Math.random() * 2000 + 1000);
         
         const footballLink = await driver.wait(
@@ -153,7 +152,7 @@ function saveResultsToJsonAndCsv(results) {
 
     fs.writeFileSync(jsonFile, JSON.stringify(results, null, 2), 'utf-8');
 
-    const csvHeader = 'Команды,Ссылка на матч,Подряд нулевых матчей команды 1,Подряд нулевых матчей команды 2\n';
+    const csvHeader = 'Команды, Ссылка на матч, Подряд нулевых матчей команды 1, Подряд нулевых матчей команды 2\n';
     const csvBody = results.map(match =>
         `"${match.teams}","${match.url}",${match.team1ConsecutiveZeros},${match.team2ConsecutiveZeros}`
     ).join('\n');
@@ -162,7 +161,8 @@ function saveResultsToJsonAndCsv(results) {
 
 async function checkStatsPages(statUrls) {
     const options = new chrome.Options();
-    options.addArguments('--headless');
+    options.addArguments('--start-maximized');
+    // options.addArguments('--headless');
 
     const driver = await new Builder()
         .forBrowser('chrome')
@@ -170,6 +170,9 @@ async function checkStatsPages(statUrls) {
         .build();
 
     const matchesWithZeros = [];
+    const failedLinks = [];
+    let successLinksCount = 0;
+    const totalLinksCount = statUrls.length;
 
     try {
         for (const relativeUrl of statUrls) {
@@ -183,45 +186,35 @@ async function checkStatsPages(statUrls) {
                 const teams = await lastBreadcrumb.getText();
                 const tables = await driver.findElements(By.css('.ev-mstat-tbl'));
                 
-                if (tables.length < 2) {
-                    console.log(`Skipping ${relativeUrl} - not enough match tables found`);
-                    continue;
-                }
-
                 let team1ConsecutiveZeros = 0;
                 let team2ConsecutiveZeros = 0;
                 
-                // Анализ матчей первой команды
-                const team1Matches = await tables[0].findElements(By.css('.ev-mstat-ev'));
-                console.log(`Found ${team1Matches.length} matches for team 1`);
-                
-                for (const match of team1Matches) {
-                    const score = await match.findElement(By.xpath('./following-sibling::td[contains(@class, "score")]')).getText();
-                    const finalScore = score.split('(')[0].trim();
-                    console.log(`Team 1 match score: ${finalScore}`);
-                    if (finalScore === '0:0') {
-                        team1ConsecutiveZeros++;
-                    } else {
-                        break;
+                if (tables[0]) {
+                    const team1Matches = await tables[0].findElements(By.css('.ev-mstat-ev'));
+                    for (const match of team1Matches) {
+                        const score = await match.findElement(By.xpath('./following-sibling::td[contains(@class, "score")]')).getText();
+                        const finalScore = score.split('(')[0].trim();
+                        if (finalScore === '0:0') {
+                            team1ConsecutiveZeros++;
+                        } else {
+                            team1ConsecutiveZeros = 0;
+                        }
                     }
                 }
                 
-                // Анализ матчей второй команды
-                const team2Matches = await tables[1].findElements(By.css('.ev-mstat-ev'));
-                console.log(`Found ${team2Matches.length} matches for team 2`);
-                
-                for (const match of team2Matches) {
-                    const score = await match.findElement(By.xpath('./following-sibling::td[contains(@class, "score")]')).getText();
-                    const finalScore = score.split('(')[0].trim();
-                    console.log(`Team 2 match score: ${finalScore}`);
-                    if (finalScore === '0:0') {
-                        team2ConsecutiveZeros++;
-                    } else {
-                        break;
+                if (tables[1]) {
+                    const team2Matches = await tables[1].findElements(By.css('.ev-mstat-ev'));
+                    for (const match of team2Matches) {
+                        const score = await match.findElement(By.xpath('./following-sibling::td[contains(@class, "score")]')).getText();
+                        const finalScore = score.split('(')[0].trim();
+                        if (finalScore === '0:0') {
+                            team2ConsecutiveZeros++;
+                        } else {
+                            team2ConsecutiveZeros = 0;
+                        }
                     }
                 }
 
-                
                 if (team1ConsecutiveZeros >= 3 || team2ConsecutiveZeros >= 3) {
                     matchesWithZeros.push({
                         teams: teams,
@@ -230,27 +223,25 @@ async function checkStatsPages(statUrls) {
                         team2ConsecutiveZeros
                     });
                 }
-                
+                successLinksCount++;
             } catch (error) {
-                console.error(`Error processing URL ${relativeUrl}:`, error);
+                failedLinks.push({ link: relativeUrl, error: error.message });
                 continue;
             }
         }
     } catch (error) {
-        console.error('Error checking stats pages:', error);
         throw error;
     } finally {
         await driver.quit();
     }
 
-    return matchesWithZeros;
+    return { matchesWithZeros, totalLinksCount, successLinksCount, failedLinks };
 }
 
 openBetCity()
     .then(response => {
         checkStatsPages(response).then(results => {
-            console.log('Матчи с тремя и более 0:0:', results);
-            saveResultsToJsonAndCsv(results);
+            saveResultsToJsonAndCsv(results.matchesWithZeros);
         });
     })
     .catch(error => {
