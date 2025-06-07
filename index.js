@@ -222,7 +222,7 @@ async function checkStatsPages(statUrls) {
                 }
 
                 
-                if (team1ConsecutiveZeros >= 2 || team2ConsecutiveZeros >= 2) {
+                if (team1ConsecutiveZeros >= 3 || team2ConsecutiveZeros >= 3) {
                     matchesWithZeros.push({
                         teams: teams,
                         url: relativeUrl,
