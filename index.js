@@ -202,7 +202,7 @@ async function checkStatsPages(statUrls) {
         for (const relativeUrl of statUrls) {
             try {
                 await driver.get(relativeUrl);
-                await driver.wait(until.elementLocated(By.css('body')), 10000);
+                await driver.wait(until.elementLocated(By.css('body')), 20000);
                 // await driver.wait(until.elementLocated(By.css('.mstat__content')), 30000);
                 await driver.sleep(Math.random() * 2000 + 2000);
 
@@ -239,7 +239,7 @@ async function checkStatsPages(statUrls) {
                     }
                 }
 
-                if (team1ConsecutiveZeros >= 2 || team2ConsecutiveZeros >= 2) {
+                if (team1ConsecutiveZeros >= 3 || team2ConsecutiveZeros >= 3) {
                     matchesWithZeros.push({
                         teams: teams,
                         url: relativeUrl,
