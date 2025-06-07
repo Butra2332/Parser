@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 async function openBetCity() {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
-    options.addArguments('--headless');
+    // options.addArguments('--headless');
     
     const driver = await new Builder()
         .forBrowser('chrome')
@@ -159,6 +159,7 @@ function saveResultsToJsonAndCsv(results) {
     fs.writeFileSync(csvFile, csvHeader + csvBody, 'utf-8');
 }
 
+// Новая функция для сохранения отчета о выполнении в CSV
 function saveReportToCsv(totalLinksCount, successLinksCount, failedLinks) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const resultsDir = path.join(__dirname, 'results');
@@ -188,7 +189,7 @@ function saveReportToCsv(totalLinksCount, successLinksCount, failedLinks) {
 async function checkStatsPages(statUrls) {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
-    options.addArguments('--headless');
+    // options.addArguments('--headless');
 
     const driver = await new Builder()
         .forBrowser('chrome')
@@ -205,7 +206,7 @@ async function checkStatsPages(statUrls) {
             try {
                 await driver.get(relativeUrl);
                 await driver.wait(until.elementLocated(By.css('body')), 10000);
-                await driver.wait(until.elementLocated(By.css('.mstat__content')), 30000);
+                await driver.wait(until.elementLocated(By.css('.mstat__content')), 10000);
                 await driver.sleep(Math.random() * 2000 + 2000);
 
                 const lastBreadcrumb = await driver.findElement(By.css('.breadcrumbs li:last-child span[itemprop="name"]'));
@@ -265,12 +266,12 @@ async function checkStatsPages(statUrls) {
 }
 
 openBetCity()
-    .then(driver => {
-        checkStatsPages(statLinks).then(results => {
+    .then(response => {
+        checkStatsPages(response).then(results => {
             saveResultsToJsonAndCsv(results.matchesWithZeros);
-            saveReportToCsv(results.totalLinksCount, results.successLinksCount, results.failedLinks);
         });
     })
     .catch(error => {
+        console.error('Error:', error);
         process.exit(1);
     });
