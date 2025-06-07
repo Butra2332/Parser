@@ -11,14 +11,6 @@ async function openBetCity() {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
     options.addArguments('--headless');
-    options.addArguments('--disable-blink-features=AutomationControlled');
-    options.addArguments('--disable-dev-shm-usage');
-    options.addArguments('--no-sandbox');
-    options.addArguments('--disable-gpu');
-    options.addArguments('--window-size=1920,1080');
-    options.addArguments('--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
-    options.addArguments('--user-data-dir=/tmp/chrome-user-data-' + Math.random().toString(36).substring(7));
-    options.addArguments('--remote-debugging-port=9222');
 
     const driver = await new Builder()
         .forBrowser('chrome')
@@ -94,6 +86,7 @@ async function checkStatsPages(driver, statUrls) {
                 await driver.wait(until.elementLocated(By.css('.mstat__content')), 30000);
                 await driver.sleep(Math.random() * 2000 + 2000);
 
+                // Получаем названия команд из последнего элемента breadcrumbs
                 const lastBreadcrumb = await driver.findElement(By.css('.breadcrumbs li:last-child span[itemprop="name"]'));
                 const teams = await lastBreadcrumb.getText();
                 console.log(`Found teams: ${teams}`);
@@ -166,6 +159,7 @@ async function checkStatsPages(driver, statUrls) {
 async function main() {
     const driver = await openBetCity();
     try {
+
 
         const results = await checkStatsPages(driver, statLinks);
         console.log('Matches with 3+ consecutive 0:0:', results.matchesWithZeros);
