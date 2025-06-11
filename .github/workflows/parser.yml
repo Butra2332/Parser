@@ -8,100 +8,41 @@ on:
     - cron: '0 7 * * *'  # 10:00 Moscow time (UTC+3)
 
 jobs:
-  run-parser:
+  parse:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    continue-on-error: true
+    
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Install Chrome
-        run: |
-          wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-          sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
-          sudo apt-get update
-          sudo apt-get install -y google-chrome-stable
-      - name: Install dependencies
-        run: npm install
-      - name: Run parser
-        id: run-parser
-        run: |
-          node index.js 2>&1 | tee error.log
-          echo "ERROR_LOG<<EOF" >> $GITHUB_ENV
-          cat error.log >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-      - name: Upload reports as artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: parser-reports
-          path: reports/*.xlsx
-          if-no-files-found: error
-      - name: Check if parser failed
-        if: failure()
-        run: |
-          echo "Parser failed, will retry in 15 minutes"
-          echo "RETRY=true" >> $GITHUB_ENV
-      - name: Wait 15 minutes
-        if: failure()
-        run: sleep 900
-      - name: Retry parser
-        if: failure()
-        run: |
-          node index.js 2>&1 | tee error.log
-          echo "ERROR_LOG<<EOF" >> $GITHUB_ENV
-          cat error.log >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-      - name: Upload reports after retry
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: parser-reports-retry
-          path: reports/*.xlsx
-          if-no-files-found: error
-      - name: Download reports
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ job.status == 'failure' && 'parser-reports-retry' || 'parser-reports' }}
-          path: reports
-      - name: Send email on failure
-        if: failure()
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          username: ${{ secrets.EMAIL_USER }}
-          password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: Parser Failed
-          body: |
-            Parser failed after retry. Please check the logs.
-            
-            Error log:
-            ```
-            ${{ env.ERROR_LOG }}
-            ```
-          to: ${{ secrets.EMAIL_USER }}
-          from: GitHub Actions
-      - name: Send email on success
-        if: success()
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          username: ${{ secrets.EMAIL_USER }}
-          password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: Parser Success
-          body: |
-            Parser completed successfully!
-            
-            Log:
-            ```
-            ${{ env.ERROR_LOG }}
-            ```
-          to: ${{ secrets.EMAIL_USER }}
-          from: GitHub Actions
-          attachments: |
-            results/1xbet.xlsx
-            results/fonbet.xlsx
-            results/leon.xlsx 
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install Chrome
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y chromium-browser
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Run parser
+      run: node index.js
+      
+    - name: Send email
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 465
+        username: ${{ secrets.EMAIL_USER }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: Parser Results
+        body: |
+          Results from Parser:
+          
+          Please find the attached files with the results.
+        from: ${{ secrets.EMAIL_USER }}
+        to: ${{ secrets.EMAIL_USER }}
+        secure: true
+        attachments: results/*.json,results/*.csv 
