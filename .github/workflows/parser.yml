@@ -21,19 +21,14 @@ jobs:
         
     - name: Install Chrome
       run: |
-        wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-        sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
         sudo apt-get update
-        sudo apt-get install -y google-chrome-stable
+        sudo apt-get install -y chromium-browser
         
     - name: Install dependencies
       run: npm install
       
     - name: Run parser
-      run: |
-        mkdir -p /tmp/chrome-data
-        export CHROME_USER_DATA_DIR=/tmp/chrome-data
-        node index.js
+      run: node index.js
       
     - name: Send email
       uses: dawidd6/action-send-mail@v3

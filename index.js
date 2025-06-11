@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 async function openBetCity() {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
-    // options.addArguments('--headless');
+    options.addArguments('--headless');
     
     const driver = await new Builder()
         .forBrowser('chrome')
@@ -194,7 +194,7 @@ function saveReportToCsv(totalLinksCount, successLinksCount, failedLinks) {
 async function checkStatsPages(statUrls) {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
-    // options.addArguments('--headless');
+    options.addArguments('--headless');
 
     const driver = await new Builder()
         .forBrowser('chrome')
