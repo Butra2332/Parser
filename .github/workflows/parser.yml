@@ -30,7 +30,10 @@ jobs:
       run: npm install
       
     - name: Run parser
-      run: node index.js
+      run: |
+        mkdir -p /tmp/chrome-data
+        export CHROME_USER_DATA_DIR=/tmp/chrome-data
+        node index.js
       
     - name: Send email
       uses: dawidd6/action-send-mail@v3
