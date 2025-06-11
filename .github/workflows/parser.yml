@@ -32,6 +32,12 @@ jobs:
           echo "ERROR_LOG<<EOF" >> $GITHUB_ENV
           cat error.log >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
+      - name: Upload reports as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: parser-reports
+          path: reports/*.xlsx
+          if-no-files-found: error
       - name: Check if parser failed
         if: failure()
         run: |
@@ -47,6 +53,18 @@ jobs:
           echo "ERROR_LOG<<EOF" >> $GITHUB_ENV
           cat error.log >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
+      - name: Upload reports after retry
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parser-reports-retry
+          path: reports/*.xlsx
+          if-no-files-found: error
+      - name: Download reports
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ job.status == 'failure' && 'parser-reports-retry' || 'parser-reports' }}
+          path: reports
       - name: Send email on failure
         if: failure()
         uses: dawidd6/action-send-mail@v3
