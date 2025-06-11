@@ -21,6 +21,16 @@ async function openBetCity() {
         await driver.get('https://betcity.by/ru');
         await driver.wait(until.elementLocated(By.css('body')), 10000);
         
+        try {
+            const closeButton = await driver.wait(until.elementLocated(By.css('.push-confirm .icon_close')), 5000);
+            if (closeButton) {
+                await closeButton.click();
+                await driver.sleep(1000);
+            }
+        } catch (e) {
+            console.log('No popup found, continuing...');
+        }
+
         await driver.sleep(Math.random() * 2000 + 1000);
         
         const footballLink = await driver.wait(
