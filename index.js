@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 async function openBetCity() {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
-    options.addArguments('--headless');
+    // options.addArguments('--headless');
     
     const driver = await new Builder()
         .forBrowser('chrome')
@@ -27,9 +27,7 @@ async function openBetCity() {
                 await closeButton.click();
                 await driver.sleep(1000);
             }
-        } catch (e) {
-            console.log('No popup found, continuing...');
-        }
+        } catch (e) { }
 
         await driver.sleep(Math.random() * 2000 + 1000);
         
@@ -196,7 +194,7 @@ function saveReportToCsv(totalLinksCount, successLinksCount, failedLinks) {
 async function checkStatsPages(statUrls) {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
-    options.addArguments('--headless');
+    // options.addArguments('--headless');
 
     const driver = await new Builder()
         .forBrowser('chrome')
