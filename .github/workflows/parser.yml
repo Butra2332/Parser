@@ -65,6 +65,8 @@ jobs:
             ```
           to: ${{ secrets.EMAIL_USER }}
           from: GitHub Actions
+          attachments: |
+            reports/*.xlsx
       - name: Send email on success
         if: success()
         uses: dawidd6/action-send-mail@v3
@@ -82,4 +84,6 @@ jobs:
             ${{ env.ERROR_LOG }}
             ```
           to: ${{ secrets.EMAIL_USER }}
-          from: GitHub Actions 
+          from: GitHub Actions
+          attachments: |
+            reports/*.xlsx 
