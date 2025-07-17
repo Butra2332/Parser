@@ -22,7 +22,7 @@ function parseScore(matchText, scoreText, teamName) {
 async function getAllHockeyLinks() {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
-    // options.addArguments('--headless');
+    options.addArguments('--headless');
 
     const driver = await new Builder()
         .forBrowser('chrome')
@@ -158,7 +158,7 @@ async function getAllHockeyLinks() {
 async function parseHockeyGames(statUrls) {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
-    // options.addArguments('--headless');
+    options.addArguments('--headless');
 
     const driver = await new Builder()
         .forBrowser('chrome')

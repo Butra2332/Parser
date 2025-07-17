@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 async function getAllSoccerLinks () {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
-    // options.addArguments('--headless');
+    options.addArguments('--headless');
     
     const driver = await new Builder()
         .forBrowser('chrome')
@@ -190,7 +190,7 @@ function saveReportToCsv(totalLinksCount, successLinksCount, failedLinks) {
 async function parseSoccerGames (statUrls) {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
-    // options.addArguments('--headless');
+    options.addArguments('--headless');
 
     const driver = await new Builder()
         .forBrowser('chrome')
