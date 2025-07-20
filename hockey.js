@@ -155,6 +155,32 @@ async function getAllHockeyLinks() {
     }
 }
 
+async function getLastTwoScores(table, teamName) {
+    const rows = await table.findElements(By.css('tr'));
+    let scores = [];
+    let i = 0;
+    while (i < rows.length && scores.length < 2) {
+        const tds = await rows[i].findElements(By.css('td'));
+        if (tds.length < 3) { i++; continue; }
+        let matchText, scoreText;
+        try {
+            matchText = await tds[1].getText();
+            scoreText = await tds[2].getText();
+        } catch { i++; continue; }
+        if (!matchText || !scoreText) { i++; continue; }
+        // Определяем хозяин/гость
+        const [home, away] = matchText.split(' - ');
+        const [homeGoals, awayGoals] = scoreText.split(' ')[0].split(':').map(Number);
+        if (home && home.trim() === teamName.trim()) {
+            scores.push(homeGoals);
+        } else if (away && away.trim() === teamName.trim()) {
+            scores.push(awayGoals);
+        }
+        i++;
+    }
+    return scores;
+}
+
 async function parseHockeyGames(statUrls) {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
@@ -177,41 +203,28 @@ async function parseHockeyGames(statUrls) {
                 await driver.wait(until.elementLocated(By.css('body')), 20000);
                 await driver.sleep(Math.random() * 2000 + 2000);
 
-                // Получаем названия команд из хлебных крошек
-                const breadcrumbs = await driver.findElements(By.css('.breadcrumbs li span[itemprop="name"]'));
-                const teamsText = await Promise.all(breadcrumbs.map(b => b.getText()));
-                const matchTeams = teamsText[teamsText.length - 1]; // "Аделаида Адренелин - Мельбурн Мустангс"
-                const [team1, team2] = matchTeams.split(' - ');
-
-                // Получаем таблицы последних игр
+                // Получаем таблицы последних игр (может быть 1 или 2)
                 const tables = await driver.findElements(By.css('.ev-mstat-tbl'));
-                if (tables.length < 2) throw new Error('Not enough tables for both teams');
-
-                // Для каждой команды парсим последние 2 матча
-                async function getLastTwoScores(table, teamName) {
-                    const rows = await table.findElements(By.css('tr'));
-                    let scores = [];
-                    let found = 0;
-                    for (let i = 0; i < rows.length && found < 2; i++) {
-                        const tds = await rows[i].findElements(By.css('td'));
-                        if (tds.length < 3) continue;
-                        // Проверяем, что это строка с матчем
-                        let matchText, scoreText;
-                        try {
-                            matchText = await tds[1].getText();
-                            scoreText = await tds[2].getText();
-                        } catch { continue; }
-                        if (!matchText || !scoreText) continue;
-                        // Проверяем, что в строке есть название команды
-                        if (!matchText.includes(teamName)) continue;
-                        scores.push(parseScore(matchText, scoreText, teamName));
-                        found++;
-                    }
-                    return scores;
+                let team1 = '', team2 = '';
+                let team1Scores = [], team2Scores = [];
+                if (tables[0]) {
+                    const team1Header = await tables[0].findElement(By.css('tr td.title')).getText();
+                    team1 = team1Header.replace('Последние игры', '').replace(':', '').trim();
+                    team1Scores = await getLastTwoScores(tables[0], team1);
+                }
+                if (tables[1]) {
+                    const team2Header = await tables[1].findElement(By.css('tr td.title')).getText();
+                    team2 = team2Header.replace('Последние игры', '').replace(':', '').trim();
+                    team2Scores = await getLastTwoScores(tables[1], team2);
                 }
 
-                const team1Scores = await getLastTwoScores(tables[0], team1);
-                const team2Scores = await getLastTwoScores(tables[1], team2);
+                // Получаем строку с названиями команд для отчёта
+                let matchTeams = '';
+                try {
+                    const breadcrumbs = await driver.findElements(By.css('.breadcrumbs li span[itemprop="name"]'));
+                    const teamsText = await Promise.all(breadcrumbs.map(b => b.getText()));
+                    matchTeams = teamsText[teamsText.length - 1];
+                } catch { matchTeams = `${team1} - ${team2}`; }
 
                 // Если хотя бы у одной команды оба последних матча = 0 голов — матч проходит
                 const team1AllZero = team1Scores.length === 2 && team1Scores[0] === 0 && team1Scores[1] === 0;
