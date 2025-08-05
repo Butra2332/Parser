@@ -8,14 +8,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 function parseScore(matchText, scoreText, teamName) {
-    // matchText: "Аделаида Адренелин - Брисбен Лайтнинг"
-    // scoreText: "2:4 (2:1, 0:1, 0:2)"
-    const [home, away] = matchText.split(' - ');
+    const [home, away] = matchText.split(' - ').map(s => s.trim().toLowerCase());
     const [homeGoals, awayGoals] = scoreText.split(' ')[0].split(':').map(Number);
-    if (home.includes(teamName)) {
+    const team = teamName.trim().toLowerCase();
+    if (home === team) {
         return homeGoals;
-    } else {
+    } else if (away === team) {
         return awayGoals;
+    } else {
+        return null;
     }
 }
 
@@ -161,23 +162,24 @@ async function getLastTwoScores(table, teamName) {
     let i = 0;
     while (i < rows.length && scores.length < 2) {
         const tds = await rows[i].findElements(By.css('td'));
-        if (tds.length < 3) { i++; continue; }
-        let matchText, scoreText;
-        try {
-            matchText = await tds[1].getText();
-            scoreText = await tds[2].getText();
-        } catch { i++; continue; }
-        if (!matchText || !scoreText) { i++; continue; }
-        // Определяем хозяин/гость
-        const [home, away] = matchText.split(' - ');
-        const [homeGoals, awayGoals] = scoreText.split(' ')[0].split(':').map(Number);
-        if (home && home.trim() === teamName.trim()) {
-            scores.push(homeGoals);
-        } else if (away && away.trim() === teamName.trim()) {
-            scores.push(awayGoals);
+        if (tds.length === 2) {
+            let matchText, scoreText;
+            try {
+                matchText = await tds[0].getText();
+                scoreText = await tds[1].getText();
+            } catch { i++; continue; }
+
+            if (!matchText || !scoreText || !matchText.includes(' - ')) { i++; continue; }
+
+            const goals = parseScore(matchText, scoreText, teamName);
+
+            if (typeof goals === 'number' && !isNaN(goals)) {
+                scores.push(goals);
+            }
         }
         i++;
     }
+
     return scores;
 }
 
@@ -203,22 +205,24 @@ async function parseHockeyGames(statUrls) {
                 await driver.wait(until.elementLocated(By.css('body')), 20000);
                 await driver.sleep(Math.random() * 2000 + 2000);
 
-                // Получаем таблицы последних игр (может быть 1 или 2)
                 const tables = await driver.findElements(By.css('.ev-mstat-tbl'));
+                
                 let team1 = '', team2 = '';
                 let team1Scores = [], team2Scores = [];
+
                 if (tables[0]) {
                     const team1Header = await tables[0].findElement(By.css('tr td.title')).getText();
-                    team1 = team1Header.replace('Последние игры', '').replace(':', '').trim();
+                    const team1Match = team1Header.match(/Последние игры\s*(.*)/i);
+                    team1 = team1Match ? team1Match[1].replace(':', '').trim() : team1Header.trim();
                     team1Scores = await getLastTwoScores(tables[0], team1);
                 }
                 if (tables[1]) {
                     const team2Header = await tables[1].findElement(By.css('tr td.title')).getText();
-                    team2 = team2Header.replace('Последние игры', '').replace(':', '').trim();
+                    const team2Match = team2Header.match(/Последние игры\s*(.*)/i);
+                    team2 = team2Match ? team2Match[1].replace(':', '').trim() : team2Header.trim();
                     team2Scores = await getLastTwoScores(tables[1], team2);
                 }
 
-                // Получаем строку с названиями команд для отчёта
                 let matchTeams = '';
                 try {
                     const breadcrumbs = await driver.findElements(By.css('.breadcrumbs li span[itemprop="name"]'));
@@ -226,7 +230,6 @@ async function parseHockeyGames(statUrls) {
                     matchTeams = teamsText[teamsText.length - 1];
                 } catch { matchTeams = `${team1} - ${team2}`; }
 
-                // Если хотя бы у одной команды оба последних матча = 0 голов — матч проходит
                 const team1AllZero = team1Scores.length === 2 && team1Scores[0] === 0 && team1Scores[1] === 0;
                 const team2AllZero = team2Scores.length === 2 && team2Scores[0] === 0 && team2Scores[1] === 0;
 
