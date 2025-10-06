@@ -3,6 +3,7 @@ import chrome from 'selenium-webdriver/chrome.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import chromedriver from 'chromedriver';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,9 +26,12 @@ async function getAllHockeyLinks() {
     options.addArguments('--start-maximized');
     options.addArguments('--headless');
 
+    const service = new chrome.ServiceBuilder(chromedriver.path);
+
     const driver = await new Builder()
         .forBrowser('chrome')
         .setChromeOptions(options)
+        .setChromeService(service)
         .build();
 
     try {
