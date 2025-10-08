@@ -24,7 +24,9 @@ function parseScore(matchText, scoreText, teamName) {
 async function getAllHockeyLinks() {
     const options = new chrome.Options();
     options.addArguments('--start-maximized');
-    options.addArguments('--headless');
+    options.addArguments('--headless=new');
+    options.addArguments('--no-sandbox'); 
+    options.addArguments('--disable-dev-shm-usage');
     
     const driver = await new Builder()
         .forBrowser('chrome')
