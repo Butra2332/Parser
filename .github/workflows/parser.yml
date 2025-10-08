@@ -5,29 +5,44 @@ on:
     branches:
       - main
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '0 7 * * *'  # 10:00 Moscow time (UTC+3)
 
 jobs:
   parse:
     runs-on: ubuntu-latest
-
+    
     steps:
     - uses: actions/checkout@v3
-
+    
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
         node-version: '18'
-
+        
     - name: Install Chrome
       run: |
         sudo apt-get update
         sudo apt-get install -y chromium-browser
-
+        
     - name: Install dependencies
       run: npm install
-
+      
     - name: Run parser
       run: node index.js
-      env:
-        CHROME_BIN: /usr/bin/chromium-browser
+      
+    - name: Send email
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 465
+        username: ${{ secrets.EMAIL_USER }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: Parser Results
+        body: |
+          Results from Parser:
+          
+          Please find the attached files with the results.
+        from: ${{ secrets.EMAIL_USER }}
+        to: ${{ secrets.EMAIL_USER }}
+        secure: true
+        attachments: results/*.json,results/*.csv 
