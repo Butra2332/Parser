@@ -12,8 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+    - uses: actions/checkout@v3
 
     - name: Set up Node.js
       uses: actions/setup-node@v3
@@ -27,32 +26,10 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y google-chrome-stable
 
-    - name: Install ChromeDriver
-      uses: nanasess/setup-chromedriver@v1
-      with:
-        chrome-version: 'stable'
-
     - name: Install dependencies
       run: npm install
 
     - name: Run parser
       run: node index.js
       env:
-        CHROME_BIN: /usr/bin/google-chrome 
-
-    - name: Send email
-      uses: dawidd6/action-send-mail@v3
-      with:
-        server_address: smtp.gmail.com
-        server_port: 465
-        username: ${{ secrets.EMAIL_USER }}
-        password: ${{ secrets.EMAIL_PASSWORD }}
-        subject: Parser Results
-        body: |
-          Results from Parser:
-          
-          Please find the attached files with the results.
-        from: ${{ secrets.EMAIL_USER }}
-        to: ${{ secrets.EMAIL_USER }}
-        secure: true
-        attachments: results/*.json,results/*.csv
+        CHROME_BIN: /usr/bin/google-chrome
