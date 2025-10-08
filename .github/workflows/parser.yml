@@ -10,26 +10,36 @@ on:
 jobs:
   parse:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v3
-    
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
         node-version: '18'
-        
-    - name: Install Chrome
+
+    - name: Install Google Chrome
       run: |
+        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+        sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
         sudo apt-get update
-        sudo apt-get install -y chromium-browser
-        
+        sudo apt-get install -y google-chrome-stable
+
+    - name: Install ChromeDriver
+      uses: nanasess/setup-chromedriver@v1
+      with:
+        chrome-version: 'stable'
+
     - name: Install dependencies
       run: npm install
-      
+
     - name: Run parser
       run: node index.js
-      
+      env:
+        CHROME_BIN: /usr/bin/google-chrome 
+
     - name: Send email
       uses: dawidd6/action-send-mail@v3
       with:
@@ -45,4 +55,4 @@ jobs:
         from: ${{ secrets.EMAIL_USER }}
         to: ${{ secrets.EMAIL_USER }}
         secure: true
-        attachments: results/*.json,results/*.csv 
+        attachments: results/*.json,results/*.csv
