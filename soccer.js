@@ -10,8 +10,8 @@ const __dirname = path.dirname(__filename);
 
 async function getAllSoccerLinks () {
     const options = new chrome.Options();
-    options.addArguments('--headless');
-    options.addArguments('--no-sandbox');
+    options.addArguments('--headless'); 
+    options.addArguments('--no-sandbox'); 
     options.addArguments('--disable-dev-shm-usage');
 
     const service = new chrome.ServiceBuilder(chromedriver.path);

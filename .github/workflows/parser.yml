@@ -19,10 +19,15 @@ jobs:
       with:
         node-version: '18'
 
+    - name: Install Chrome
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y chromium-browser
+
     - name: Install dependencies
       run: npm install
 
     - name: Run parser
       run: node index.js
       env:
-        CHROME_BIN: $(npm bin)/chromedriver
+        CHROME_BIN: /usr/bin/chromium-browser
