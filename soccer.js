@@ -10,17 +10,13 @@ const __dirname = path.dirname(__filename);
 
 async function getAllSoccerLinks () {
     const options = new chrome.Options();
-    options.addArguments('--headless'); 
-    options.addArguments('--no-sandbox'); 
-    options.addArguments('--disable-dev-shm-usage');
-
-    const service = new chrome.ServiceBuilder(chromedriver.path);
-
+    options.addArguments('--start-maximized');
+    options.addArguments('--headless');
+    
     const driver = await new Builder()
-    .forBrowser('chrome')
-    .setChromeOptions(options)
-    .setChromeService(service)
-    .build();
+        .forBrowser('chrome')
+        .setChromeOptions(options)
+        .build();
 
     try {
         await driver.get('https://betcity.by/ru');

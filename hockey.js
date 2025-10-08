@@ -23,18 +23,13 @@ function parseScore(matchText, scoreText, teamName) {
 
 async function getAllHockeyLinks() {
     const options = new chrome.Options();
-    options.addArguments('--headless'); 
-    options.addArguments('--no-sandbox'); 
-    options.addArguments('--disable-dev-shm-usage');
-
-    const service = new chrome.ServiceBuilder(chromedriver.path);
-
+    options.addArguments('--start-maximized');
+    options.addArguments('--headless');
+    
     const driver = await new Builder()
-    .forBrowser('chrome')
-    .setChromeOptions(options)
-    .setChromeService(service)
-    .build();
-
+        .forBrowser('chrome')
+        .setChromeOptions(options)
+        .build();
     try {
         await driver.get('https://betcity.by/ru');
         await driver.wait(until.elementLocated(By.css('body')), 10000);
