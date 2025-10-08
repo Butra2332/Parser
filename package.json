@@ -8,7 +8,7 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "chromedriver": "^140.0.4",
+    "chromedriver": "^141.0.1",
     "csv-writer": "^1.6.0",
     "nodemailer": "^6.9.9",
     "selenium-webdriver": "^4.18.1"

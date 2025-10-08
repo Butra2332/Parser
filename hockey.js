@@ -3,7 +3,6 @@ import chrome from 'selenium-webdriver/chrome.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import chromedriver from 'chromedriver';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,11 +26,16 @@ async function getAllHockeyLinks() {
     options.addArguments('--headless=new');
     options.addArguments('--no-sandbox'); 
     options.addArguments('--disable-dev-shm-usage');
+
+    const serviceBuilder = new chrome.ServiceBuilder('/usr/bin/google-chrome'); 
     
     const driver = await new Builder()
         .forBrowser('chrome')
         .setChromeOptions(options)
+        .setChromeService(serviceBuilder) 
         .build();
+
+
     try {
         await driver.get('https://betcity.by/ru');
         await driver.wait(until.elementLocated(By.css('body')), 10000);

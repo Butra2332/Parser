@@ -1,6 +1,5 @@
 import { Builder, By, until, Key } from 'selenium-webdriver';
 import chrome from 'selenium-webdriver/chrome.js';
-import chromedriver from 'chromedriver';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -9,16 +8,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function getAllSoccerLinks () {
-    const options = new chrome.Options();
+const options = new chrome.Options();
     options.addArguments('--start-maximized');
     options.addArguments('--headless=new');
-
     options.addArguments('--no-sandbox'); 
     options.addArguments('--disable-dev-shm-usage');
+
+    const serviceBuilder = new chrome.ServiceBuilder('/usr/bin/google-chrome'); 
     
     const driver = await new Builder()
         .forBrowser('chrome')
         .setChromeOptions(options)
+        .setChromeService(serviceBuilder) 
         .build();
 
     try {
