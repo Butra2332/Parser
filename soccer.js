@@ -8,18 +8,28 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function getAllSoccerLinks () {
-const options = new chrome.Options();
-    options.addArguments('--start-maximized');
+  const options = new chrome.Options();
+    
+    // 💡 ОЧЕНЬ ВАЖНО: Явно указываем путь к исполняемому файлу Chrome
+    options.setChromeBinaryPath('/usr/bin/google-chrome'); 
+
+    // Обязательные флаги для CI/CD среды
     options.addArguments('--headless=new');
     options.addArguments('--no-sandbox'); 
     options.addArguments('--disable-dev-shm-usage');
-
-    const serviceBuilder = new chrome.ServiceBuilder('/usr/bin/google-chrome'); 
     
+    // Дополнительные флаги для стабильности
+    options.addArguments('--disable-gpu'); 
+    options.addArguments('--window-size=1920,1080');
+    options.addArguments('--disable-extensions');
+    options.addArguments('--disable-setuid-sandbox');
+    options.addArguments('--disable-dev-shm-usage'); // Повторение, но важно
+
+    // Удаляем ServiceBuilder
     const driver = await new Builder()
         .forBrowser('chrome')
         .setChromeOptions(options)
-        .setChromeService(serviceBuilder) 
+        // .setChromeService(serviceBuilder) <-- УДАЛЕНО
         .build();
 
     try {
