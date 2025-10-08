@@ -5,7 +5,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '0 6 * * *'  # 10:00 Moscow time (UTC+3)
+    - cron: '0 6 * * *'
 
 jobs:
   parse:
@@ -19,17 +19,10 @@ jobs:
       with:
         node-version: '18'
 
-    - name: Install Google Chrome
-      run: |
-        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-        sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
-        sudo apt-get update
-        sudo apt-get install -y google-chrome-stable
-
     - name: Install dependencies
       run: npm install
 
     - name: Run parser
       run: node index.js
       env:
-        CHROME_BIN: /usr/bin/google-chrome
+        CHROME_BIN: $(npm bin)/chromedriver
