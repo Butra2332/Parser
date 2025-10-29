@@ -59,9 +59,12 @@ async function getAllHockeyLinks() {
     options.addArguments('--disable-setuid-sandbox');
     options.addArguments('--disable-dev-shm-usage'); // Повторение, но важно
 
-    const serviceBuilder = (process.env.USE_NPM_CHROMEDRIVER === '1' && chromedriver?.path)
-        ? new chrome.ServiceBuilder(chromedriver.path)
-        : undefined;
+    const ciChromedriverPath = process.env.CHROMEDRIVER_PATH;
+    const serviceBuilder = ciChromedriverPath
+        ? new chrome.ServiceBuilder(ciChromedriverPath)
+        : (process.env.USE_NPM_CHROMEDRIVER === '1' && chromedriver?.path)
+            ? new chrome.ServiceBuilder(chromedriver.path)
+            : undefined;
     const driver = await new Builder()
         .forBrowser('chrome')
         .setChromeOptions(options)
@@ -236,9 +239,12 @@ async function parseHockeyGames(statUrls) {
     options.addArguments('--disable-extensions');
     options.addArguments('--disable-setuid-sandbox');
 
-    const serviceBuilder2 = (process.env.USE_NPM_CHROMEDRIVER === '1' && chromedriver?.path)
-        ? new chrome.ServiceBuilder(chromedriver.path)
-        : undefined;
+    const ciChromedriverPath2 = process.env.CHROMEDRIVER_PATH;
+    const serviceBuilder2 = ciChromedriverPath2
+        ? new chrome.ServiceBuilder(ciChromedriverPath2)
+        : (process.env.USE_NPM_CHROMEDRIVER === '1' && chromedriver?.path)
+            ? new chrome.ServiceBuilder(chromedriver.path)
+            : undefined;
     const driver = await new Builder()
         .forBrowser('chrome')
         .setChromeOptions(options)

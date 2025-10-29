@@ -43,6 +43,9 @@ jobs:
         google-chrome --version || true
         chromedriver --version || true
 
+    - name: Export CHROMEDRIVER_PATH for app
+      run: echo "CHROMEDRIVER_PATH=$(which chromedriver)" >> $GITHUB_ENV
+
     - name: Run parser
       env:
         USE_NPM_CHROMEDRIVER: '0'

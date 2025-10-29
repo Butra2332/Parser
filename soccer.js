@@ -46,10 +46,13 @@ async function getAllSoccerLinks () {
     options.addArguments('--disable-setuid-sandbox');
     options.addArguments('--disable-dev-shm-usage'); // Повторение, но важно
 
-    // Используем chromedriver из npm только если явно включено
-    const serviceBuilder = (process.env.USE_NPM_CHROMEDRIVER === '1' && chromedriver?.path)
-        ? new chrome.ServiceBuilder(chromedriver.path)
-        : undefined;
+    // Предпочитаем явный путь из CHROMEDRIVER_PATH (CI), иначе npm-драйвер по флагу
+    const ciChromedriverPath = process.env.CHROMEDRIVER_PATH;
+    const serviceBuilder = ciChromedriverPath
+        ? new chrome.ServiceBuilder(ciChromedriverPath)
+        : (process.env.USE_NPM_CHROMEDRIVER === '1' && chromedriver?.path)
+            ? new chrome.ServiceBuilder(chromedriver.path)
+            : undefined;
 
     const driver = await new Builder()
         .forBrowser('chrome')
@@ -241,9 +244,12 @@ async function parseSoccerGames (statUrls) {
     options.addArguments('--disable-extensions');
     options.addArguments('--disable-setuid-sandbox');
 
-    const serviceBuilder2 = (process.env.USE_NPM_CHROMEDRIVER === '1' && chromedriver?.path)
-        ? new chrome.ServiceBuilder(chromedriver.path)
-        : undefined;
+    const ciChromedriverPath2 = process.env.CHROMEDRIVER_PATH;
+    const serviceBuilder2 = ciChromedriverPath2
+        ? new chrome.ServiceBuilder(ciChromedriverPath2)
+        : (process.env.USE_NPM_CHROMEDRIVER === '1' && chromedriver?.path)
+            ? new chrome.ServiceBuilder(chromedriver.path)
+            : undefined;
     const driver = await new Builder()
         .forBrowser('chrome')
         .setChromeOptions(options)
