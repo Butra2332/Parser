@@ -236,7 +236,9 @@ async function parseHockeyGames(statUrls) {
     options.addArguments('--disable-extensions');
     options.addArguments('--disable-setuid-sandbox');
 
-    const serviceBuilder2 = chromedriver?.path ? new chrome.ServiceBuilder(chromedriver.path) : undefined;
+    const serviceBuilder2 = (process.env.USE_NPM_CHROMEDRIVER === '1' && chromedriver?.path)
+        ? new chrome.ServiceBuilder(chromedriver.path)
+        : undefined;
     const driver = await new Builder()
         .forBrowser('chrome')
         .setChromeOptions(options)
