@@ -29,6 +29,12 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
+    - name: Remove npm chromedriver from PATH
+      run: |
+        rm -f node_modules/.bin/chromedriver || true
+        rm -f node_modules/.bin/chromedriver.exe || true
+        rm -f node_modules/.bin/chromedriver.cmd || true
+
     - name: Run parser
       env:
         USE_NPM_CHROMEDRIVER: '0'
