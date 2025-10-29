@@ -24,7 +24,10 @@ jobs:
       with:
         chrome-version: stable
 
-    # Rely on Selenium Manager to fetch a matching ChromeDriver automatically
+    - name: Setup Chromedriver (pin to Chrome 140)
+      uses: nanasess/setup-chromedriver@v2
+      with:
+        chromedriver-version: '140.0.7339.0'
         
     - name: Install dependencies
       run: npm ci
@@ -34,6 +37,11 @@ jobs:
         rm -f node_modules/.bin/chromedriver || true
         rm -f node_modules/.bin/chromedriver.exe || true
         rm -f node_modules/.bin/chromedriver.cmd || true
+
+    - name: Verify Chrome and Chromedriver versions
+      run: |
+        google-chrome --version || true
+        chromedriver --version || true
 
     - name: Run parser
       env:
