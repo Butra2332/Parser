@@ -46,8 +46,10 @@ async function getAllSoccerLinks () {
     options.addArguments('--disable-setuid-sandbox');
     options.addArguments('--disable-dev-shm-usage'); // Повторение, но важно
 
-    // Используем chromedriver из npm, если доступен
-    const serviceBuilder = chromedriver?.path ? new chrome.ServiceBuilder(chromedriver.path) : undefined;
+    // Используем chromedriver из npm только если явно включено
+    const serviceBuilder = (process.env.USE_NPM_CHROMEDRIVER === '1' && chromedriver?.path)
+        ? new chrome.ServiceBuilder(chromedriver.path)
+        : undefined;
 
     const driver = await new Builder()
         .forBrowser('chrome')
@@ -239,7 +241,9 @@ async function parseSoccerGames (statUrls) {
     options.addArguments('--disable-extensions');
     options.addArguments('--disable-setuid-sandbox');
 
-    const serviceBuilder2 = chromedriver?.path ? new chrome.ServiceBuilder(chromedriver.path) : undefined;
+    const serviceBuilder2 = (process.env.USE_NPM_CHROMEDRIVER === '1' && chromedriver?.path)
+        ? new chrome.ServiceBuilder(chromedriver.path)
+        : undefined;
     const driver = await new Builder()
         .forBrowser('chrome')
         .setChromeOptions(options)

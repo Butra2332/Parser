@@ -59,7 +59,9 @@ async function getAllHockeyLinks() {
     options.addArguments('--disable-setuid-sandbox');
     options.addArguments('--disable-dev-shm-usage'); // Повторение, но важно
 
-    const serviceBuilder = chromedriver?.path ? new chrome.ServiceBuilder(chromedriver.path) : undefined;
+    const serviceBuilder = (process.env.USE_NPM_CHROMEDRIVER === '1' && chromedriver?.path)
+        ? new chrome.ServiceBuilder(chromedriver.path)
+        : undefined;
     const driver = await new Builder()
         .forBrowser('chrome')
         .setChromeOptions(options)
