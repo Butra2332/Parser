@@ -48,7 +48,7 @@ async function getAllHockeyLinks() {
     }
 
     // Обязательные флаги для CI/CD среды
-    // options.addArguments('--headless=new');
+    options.addArguments('--headless=new');
     options.addArguments('--no-sandbox'); 
     options.addArguments('--disable-dev-shm-usage');
     
@@ -226,7 +226,7 @@ async function parseHockeyGames(statUrls) {
     if (chromeBinary) {
         options.setChromeBinaryPath(chromeBinary);
     }
-    // options.addArguments('--headless=new');
+    options.addArguments('--headless=new');
     options.addArguments('--no-sandbox');
     options.addArguments('--disable-dev-shm-usage');
     options.addArguments('--disable-gpu');
