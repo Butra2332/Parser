@@ -3,10 +3,10 @@ import { getAllHockeyLinks, parseHockeyGames, saveHockeyResultsToCsv, saveHockey
 
 (async () => {
     try {
-        const soccerLinks = await getAllSoccerLinks();
-        const soccerResults = await parseSoccerGames(soccerLinks);
-        saveResultsToCsv(soccerResults.matchesWithZeros);
-        saveReportToCsv(soccerResults.totalLinksCount, soccerResults.successLinksCount, soccerResults.failedLinks);
+        // const soccerLinks = await getAllSoccerLinks();
+        // const soccerResults = await parseSoccerGames(soccerLinks);
+        // saveResultsToCsv(soccerResults.matchesWithZeros);
+        // saveReportToCsv(soccerResults.totalLinksCount, soccerResults.successLinksCount, soccerResults.failedLinks);
 
         
         const hockeyLinks = await getAllHockeyLinks();

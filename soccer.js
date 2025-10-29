@@ -1,5 +1,6 @@
 import { Builder, By, until, Key } from 'selenium-webdriver';
 import chrome from 'selenium-webdriver/chrome.js';
+import chromedriver from 'chromedriver';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -7,11 +8,31 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function resolveChromeBinaryPath() {
+    const envCandidates = [process.env.CHROME_BIN, process.env.CHROME_PATH].filter(Boolean);
+    const defaultCandidates = [
+        '/usr/bin/google-chrome',
+        '/usr/bin/chromium',
+        '/usr/bin/chromium-browser',
+        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+        '/Applications/Chromium.app/Contents/MacOS/Chromium'
+    ];
+    const candidates = [...envCandidates, ...defaultCandidates];
+    for (const candidate of candidates) {
+        try {
+            if (fs.existsSync(candidate)) return candidate;
+        } catch {}
+    }
+    return null;
+}
+
 async function getAllSoccerLinks () {
   const options = new chrome.Options();
     
-    // 💡 ОЧЕНЬ ВАЖНО: Явно указываем путь к исполняемому файлу Chrome
-    options.setChromeBinaryPath('/usr/bin/google-chrome'); 
+    const chromeBinary = resolveChromeBinaryPath();
+    if (chromeBinary) {
+        options.setChromeBinaryPath(chromeBinary);
+    }
 
     // Обязательные флаги для CI/CD среды
     options.addArguments('--headless=new');
@@ -25,11 +46,13 @@ async function getAllSoccerLinks () {
     options.addArguments('--disable-setuid-sandbox');
     options.addArguments('--disable-dev-shm-usage'); // Повторение, но важно
 
-    // Удаляем ServiceBuilder
+    // Используем chromedriver из npm, если доступен
+    const serviceBuilder = chromedriver?.path ? new chrome.ServiceBuilder(chromedriver.path) : undefined;
+
     const driver = await new Builder()
         .forBrowser('chrome')
         .setChromeOptions(options)
-        // .setChromeService(serviceBuilder) <-- УДАЛЕНО
+        .setChromeService(serviceBuilder)
         .build();
 
     try {
@@ -204,12 +227,23 @@ function saveReportToCsv(totalLinksCount, successLinksCount, failedLinks) {
 
 async function parseSoccerGames (statUrls) {
     const options = new chrome.Options();
-    options.addArguments('--start-maximized');
-    options.addArguments('--headless');
+    const chromeBinary = resolveChromeBinaryPath();
+    if (chromeBinary) {
+        options.setChromeBinaryPath(chromeBinary);
+    }
+    options.addArguments('--headless=new');
+    options.addArguments('--no-sandbox');
+    options.addArguments('--disable-dev-shm-usage');
+    options.addArguments('--disable-gpu');
+    options.addArguments('--window-size=1920,1080');
+    options.addArguments('--disable-extensions');
+    options.addArguments('--disable-setuid-sandbox');
 
+    const serviceBuilder2 = chromedriver?.path ? new chrome.ServiceBuilder(chromedriver.path) : undefined;
     const driver = await new Builder()
         .forBrowser('chrome')
         .setChromeOptions(options)
+        .setChromeService(serviceBuilder2)
         .build();
 
     const matchesWithZeros = [];
