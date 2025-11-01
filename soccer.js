@@ -34,19 +34,16 @@ async function getAllSoccerLinks () {
         options.setChromeBinaryPath(chromeBinary);
     }
 
-    // Обязательные флаги для CI/CD среды
     options.addArguments('--headless=new');
     options.addArguments('--no-sandbox'); 
     options.addArguments('--disable-dev-shm-usage');
     
-    // Дополнительные флаги для стабильности
     options.addArguments('--disable-gpu'); 
     options.addArguments('--window-size=1920,1080');
     options.addArguments('--disable-extensions');
     options.addArguments('--disable-setuid-sandbox');
-    options.addArguments('--disable-dev-shm-usage'); // Повторение, но важно
+    options.addArguments('--disable-dev-shm-usage'); 
 
-    // Предпочитаем явный путь из CHROMEDRIVER_PATH (CI), иначе npm-драйвер по флагу
     const ciChromedriverPath = process.env.CHROMEDRIVER_PATH;
     const serviceBuilder = ciChromedriverPath
         ? new chrome.ServiceBuilder(ciChromedriverPath)
