@@ -24,10 +24,10 @@ jobs:
       with:
         chrome-version: stable
 
-    - name: Setup Chromedriver (pin to Chrome 140)
+    - name: Setup Chromedriver (latest, matches Chrome)
       uses: nanasess/setup-chromedriver@v2
       with:
-        chromedriver-version: '140.0.7339.0'
+        chromedriver-version: latest
         
     - name: Install dependencies
       run: npm ci
