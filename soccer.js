@@ -44,6 +44,8 @@ async function getAllSoccerLinks () {
     options.addArguments('--disable-setuid-sandbox');
     options.addArguments('--disable-dev-shm-usage'); 
 
+    // Selenium Manager (built-in since Selenium 4.6+) автоматически управляет драйвером
+    // Используем явный путь только если задан CHROMEDRIVER_PATH или USE_NPM_CHROMEDRIVER=1
     const ciChromedriverPath = process.env.CHROMEDRIVER_PATH;
     const serviceBuilder = ciChromedriverPath
         ? new chrome.ServiceBuilder(ciChromedriverPath)
@@ -51,11 +53,15 @@ async function getAllSoccerLinks () {
             ? new chrome.ServiceBuilder(chromedriver.path)
             : undefined;
 
-    const driver = await new Builder()
+    const builder = new Builder()
         .forBrowser('chrome')
-        .setChromeOptions(options)
-        .setChromeService(serviceBuilder)
-        .build();
+        .setChromeOptions(options);
+    
+    if (serviceBuilder) {
+        builder.setChromeService(serviceBuilder);
+    }
+    
+    const driver = await builder.build();
 
     try {
         await driver.get('https://betcity.by/ru');
@@ -241,17 +247,23 @@ async function parseSoccerGames (statUrls) {
     options.addArguments('--disable-extensions');
     options.addArguments('--disable-setuid-sandbox');
 
+    // Selenium Manager автоматически управляет драйвером
     const ciChromedriverPath2 = process.env.CHROMEDRIVER_PATH;
     const serviceBuilder2 = ciChromedriverPath2
         ? new chrome.ServiceBuilder(ciChromedriverPath2)
         : (process.env.USE_NPM_CHROMEDRIVER === '1' && chromedriver?.path)
             ? new chrome.ServiceBuilder(chromedriver.path)
             : undefined;
-    const driver = await new Builder()
+    
+    const builder2 = new Builder()
         .forBrowser('chrome')
-        .setChromeOptions(options)
-        .setChromeService(serviceBuilder2)
-        .build();
+        .setChromeOptions(options);
+    
+    if (serviceBuilder2) {
+        builder2.setChromeService(serviceBuilder2);
+    }
+    
+    const driver = await builder2.build();
 
     const matchesWithZeros = [];
     const failedLinks = [];

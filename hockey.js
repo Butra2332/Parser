@@ -59,17 +59,23 @@ async function getAllHockeyLinks() {
     options.addArguments('--disable-setuid-sandbox');
     options.addArguments('--disable-dev-shm-usage'); // Повторение, но важно
 
+    // Selenium Manager автоматически управляет драйвером
     const ciChromedriverPath = process.env.CHROMEDRIVER_PATH;
     const serviceBuilder = ciChromedriverPath
         ? new chrome.ServiceBuilder(ciChromedriverPath)
         : (process.env.USE_NPM_CHROMEDRIVER === '1' && chromedriver?.path)
             ? new chrome.ServiceBuilder(chromedriver.path)
             : undefined;
-    const driver = await new Builder()
+    
+    const builder = new Builder()
         .forBrowser('chrome')
-        .setChromeOptions(options)
-        .setChromeService(serviceBuilder)
-        .build();
+        .setChromeOptions(options);
+    
+    if (serviceBuilder) {
+        builder.setChromeService(serviceBuilder);
+    }
+    
+    const driver = await builder.build();
 
 
     try {
@@ -239,17 +245,23 @@ async function parseHockeyGames(statUrls) {
     options.addArguments('--disable-extensions');
     options.addArguments('--disable-setuid-sandbox');
 
+    // Selenium Manager автоматически управляет драйвером
     const ciChromedriverPath2 = process.env.CHROMEDRIVER_PATH;
     const serviceBuilder2 = ciChromedriverPath2
         ? new chrome.ServiceBuilder(ciChromedriverPath2)
         : (process.env.USE_NPM_CHROMEDRIVER === '1' && chromedriver?.path)
             ? new chrome.ServiceBuilder(chromedriver.path)
             : undefined;
-    const driver = await new Builder()
+    
+    const builder2 = new Builder()
         .forBrowser('chrome')
-        .setChromeOptions(options)
-        .setChromeService(serviceBuilder2)
-        .build();
+        .setChromeOptions(options);
+    
+    if (serviceBuilder2) {
+        builder2.setChromeService(serviceBuilder2);
+    }
+    
+    const driver = await builder2.build();
 
     const passedMatches = [];
     const failedLinks = [];
