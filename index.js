@@ -14,6 +14,7 @@ import { getAllHockeyLinks, parseHockeyGames, saveHockeyResultsToCsv, saveHockey
         saveHockeyResultsToCsv(hockeyResults.passedMatches);
         saveHockeyReportToCsv(hockeyResults.totalLinksCount, hockeyResults.successLinksCount, hockeyResults.failedLinks);
     } catch (error) {
+        console.error('Parser failed:', error);
         process.exit(1);
     }
 })();
